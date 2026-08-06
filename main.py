@@ -1,385 +1,168 @@
 import random
-import customtkinter as ctk
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.spinner import Spinner
+from kivy.clock import Clock
+from kivy.core.window import Window
 
-# Force Appearance and Theme
-ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("blue")
+# Set background color to dark blue
+Window.clearcolor = (0.04, 0.07, 0.17, 1)
 
-class MathApp(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-
-        # Window Config
-        self.title("Math Learning App")
-        self.geometry("420x820")
-        self.resizable(False, False)
-
-        # Color Palette - Vivid Royal Blue & Canary Yellow
-        self.BG_DARK = "#0B132B"       # Deep Royal Navy Background
-        self.CARD_BG = "#1C2541"       # Slate Blue Container Background
-        self.YELLOW_ACCENT = "#FACC15" # Vibrant Canary Yellow
-        self.BLUE_ACCENT = "#3B82F6"   # Electric Blue
-
-        # Apply Base Background Color
-        self.configure(fg_color=self.BG_DARK)
-
-        # App State Variables
+class MathApp(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', padding=15, spacing=10, **kwargs)
+        
         self.score = 0
         self.streak = 0
-        self.best_streak = 0
-        self.total_questions = 0
-        self.correct_questions = 0
-        self.num1 = 0
-        self.num2 = 0
-        self.operation = "+"
-        self.correct_answer = 0
-
-        # Timer Variables
         self.time_left = 40
-        self.timer_running = False
-        self.timer_job = None
-
+        self.timer_event = None
+        
         self.difficulty_ranges = {
             "10s (1-10)": (1, 10),
             "100s (10-100)": (10, 100),
             "1,000s (100-1000)": (100, 1000),
             "100,000s (10k-100k)": (10000, 100000)
         }
-
-        self.setup_ui()
-        self.generate_question()
-
-    def setup_ui(self):
-        # Upper Header Banner (School Name)
-        header_frame = ctk.CTkFrame(
-            self,
-            fg_color=self.CARD_BG,
-            border_color=self.YELLOW_ACCENT,
-            border_width=2,
-            corner_radius=16
+        
+        # Header
+        self.add_widget(Label(
+            text="PM SHRI GOVT SEN SEC SCHOOL\nCHEEMA JODHPUR", 
+            font_size='14sp', bold=True, color=(0.98, 0.8, 0.08, 1), halign='center'
+        ))
+        
+        # Controls
+        self.op_spinner = Spinner(
+            text="Addition (+)",
+            values=["Addition (+)", "Subtraction (-)", "Multiplication (*)", "Division (/)"],
+            size_hint=(1, None), height=40
         )
-        header_frame.pack(fill="x", padx=15, pady=(12, 6))
-
-        school_title = ctk.CTkLabel(
-            header_frame,
-            text="PM SHRI GOVT SEN SEC SCHOOL\nCHEEMA JODHPUR",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=self.YELLOW_ACCENT,
-            justify="center"
-        )
-        school_title.pack(pady=8)
-
-        sub_title = ctk.CTkLabel(
-            header_frame,
-            text="Math Mastery Academy",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#FFFFFF"
-        )
-        sub_title.pack(pady=(0, 8))
-
-        # Controls Frame (Operations & Difficulty)
-        controls_frame = ctk.CTkFrame(self, fg_color=self.CARD_BG, corner_radius=16)
-        controls_frame.pack(fill="x", padx=15, pady=4)
-
-        # Operation Dropdown
-        op_label = ctk.CTkLabel(controls_frame, text="Select Operation:", font=ctk.CTkFont(size=12, weight="bold"), text_color=self.YELLOW_ACCENT)
-        op_label.pack(anchor="w", padx=15, pady=(6, 2))
-
-        self.op_var = ctk.StringVar(value="Addition (+)")
-        self.op_dropdown = ctk.CTkOptionMenu(
-            controls_frame,
-            values=["Addition (+)", "Subtraction (-)", "Multiplication (×)", "Division (÷)"],
-            variable=self.op_var,
-            command=self.on_setting_change,
-            fg_color=self.BLUE_ACCENT,
-            button_color="#2563EB",
-            button_hover_color="#1D4ED8",
-            dropdown_fg_color=self.CARD_BG,
-            dropdown_text_color="#FFFFFF",
-            text_color="white",
-            corner_radius=8
-        )
-        self.op_dropdown.pack(fill="x", padx=15, pady=(0, 6))
-
-        # Difficulty Dropdown
-        diff_label = ctk.CTkLabel(controls_frame, text="Select Range / Difficulty:", font=ctk.CTkFont(size=12, weight="bold"), text_color=self.YELLOW_ACCENT)
-        diff_label.pack(anchor="w", padx=15, pady=(0, 2))
-
-        self.diff_var = ctk.StringVar(value="10s (1-10)")
-        self.diff_dropdown = ctk.CTkOptionMenu(
-            controls_frame,
+        self.op_spinner.bind(text=self.generate_question)
+        self.add_widget(self.op_spinner)
+        
+        self.diff_spinner = Spinner(
+            text="10s (1-10)",
             values=list(self.difficulty_ranges.keys()),
-            variable=self.diff_var,
-            command=self.on_setting_change,
-            fg_color=self.BLUE_ACCENT,
-            button_color="#2563EB",
-            button_hover_color="#1D4ED8",
-            dropdown_fg_color=self.CARD_BG,
-            dropdown_text_color="#FFFFFF",
-            text_color="white",
-            corner_radius=8
+            size_hint=(1, None), height=40
         )
-        self.diff_dropdown.pack(fill="x", padx=15, pady=(0, 8))
-
-        # Main Question Card Frame
-        self.card_frame = ctk.CTkFrame(
-            self,
-            fg_color=self.CARD_BG,
-            corner_radius=20,
-            border_color=self.YELLOW_ACCENT,
-            border_width=2
+        self.diff_spinner.bind(text=self.generate_question)
+        self.add_widget(self.diff_spinner)
+        
+        # Stats Bar
+        self.stats_label = Label(
+            text="Score: 0  |  Time: 40s  |  Streak: 0", 
+            font_size='14sp', color=(0.98, 0.8, 0.08, 1)
         )
-        self.card_frame.pack(fill="x", padx=15, pady=6)
-
-        # Stats Row (Score, Timer, Streak)
-        stats_frame = ctk.CTkFrame(self.card_frame, fg_color="transparent")
-        stats_frame.pack(fill="x", padx=15, pady=(10, 0))
-
-        self.score_label = ctk.CTkLabel(stats_frame, text="Score: 0", font=ctk.CTkFont(size=13, weight="bold"), text_color="#60A5FA")
-        self.score_label.pack(side="left")
-
-        self.timer_label = ctk.CTkLabel(
-            stats_frame,
-            text="⏱️ 40s",
-            font=ctk.CTkFont(size=15, weight="bold"),
-            text_color=self.YELLOW_ACCENT
-        )
-        self.timer_label.pack(side="left", expand=True)
-
-        self.streak_label = ctk.CTkLabel(stats_frame, text="🔥 Streak: 0", font=ctk.CTkFont(size=13, weight="bold"), text_color="#FB923C")
-        self.streak_label.pack(side="right")
-
+        self.add_widget(self.stats_label)
+        
         # Question Display
-        self.question_label = ctk.CTkLabel(
-            self.card_frame,
-            text="",
-            font=ctk.CTkFont(size=34, weight="bold"),
-            text_color="#FFFFFF"
+        self.question_label = Label(text="", font_size='32sp', bold=True, color=(1, 1, 1, 1))
+        self.add_widget(self.question_label)
+        
+        # Answer Entry
+        self.answer_input = TextInput(
+            multiline=False, input_filter='int', 
+            font_size='20sp', size_hint=(1, None), height=50,
+            halign='center'
         )
-        self.question_label.pack(pady=12)
-
-        # Answer Input Field
-        self.answer_entry = ctk.CTkEntry(
-            self.card_frame,
-            placeholder_text="Enter answer",
-            font=ctk.CTkFont(size=20),
-            justify="center",
-            height=44,
-            corner_radius=12,
-            fg_color=self.BG_DARK,
-            border_color=self.YELLOW_ACCENT,
-            border_width=2,
-            text_color="#FFFFFF"
+        self.add_widget(self.answer_input)
+        
+        # Submit Button
+        self.submit_btn = Button(
+            text="CHECK ANSWER", font_size='16sp', bold=True,
+            background_color=(0.98, 0.8, 0.08, 1), color=(0.04, 0.07, 0.17, 1),
+            size_hint=(1, None), height=50
         )
-        self.answer_entry.pack(padx=25, pady=(0, 10), fill="x")
-        self.answer_entry.bind("<Return>", lambda event: self.check_answer())
-
-        # Main Action Button
-        self.submit_btn = ctk.CTkButton(
-            self.card_frame,
-            text="CHECK ANSWER",
-            font=ctk.CTkFont(size=15, weight="bold"),
-            height=42,
-            corner_radius=12,
-            fg_color=self.YELLOW_ACCENT,
-            hover_color="#EAB308",
-            text_color=self.BG_DARK,
-            command=self.check_answer
-        )
-        self.submit_btn.pack(padx=25, pady=(0, 12), fill="x")
-
-        # Feedback Banner
-        self.feedback_label = ctk.CTkLabel(
-            self,
-            text="",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            height=24
-        )
-        self.feedback_label.pack(fill="x", padx=15, pady=(2, 4))
-
-        # NEW: Performance Analytics Section (Fills Vacant Space)
-        analytics_frame = ctk.CTkFrame(
-            self,
-            fg_color=self.CARD_BG,
-            corner_radius=16,
-            border_color="#1D4ED8",
-            border_width=1
-        )
-        analytics_frame.pack(fill="x", padx=15, pady=6)
-
-        analytics_title = ctk.CTkLabel(
-            analytics_frame,
-            text="📊 Session Performance",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=self.YELLOW_ACCENT
-        )
-        analytics_title.pack(pady=(8, 4))
-
-        # Detailed metrics grid
-        metrics_grid = ctk.CTkFrame(analytics_frame, fg_color="transparent")
-        metrics_grid.pack(fill="x", padx=15, pady=(0, 8))
-
-        self.best_streak_label = ctk.CTkLabel(
-            metrics_grid,
-            text="Best Streak: 0",
-            font=ctk.CTkFont(size=12),
-            text_color="#94A3B8"
-        )
-        self.best_streak_label.pack(side="left")
-
-        self.accuracy_label = ctk.CTkLabel(
-            metrics_grid,
-            text="Accuracy: 0%",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#4ADE80"
-        )
-        self.accuracy_label.pack(side="right")
-
-        # Accuracy Progress Bar
-        self.accuracy_bar = ctk.CTkProgressBar(
-            analytics_frame,
-            height=8,
-            corner_radius=4,
-            progress_color=self.YELLOW_ACCENT,
-            fg_color=self.BG_DARK
-        )
-        self.accuracy_bar.set(0)
-        self.accuracy_bar.pack(fill="x", padx=15, pady=(0, 10))
-
-        # Bottom Footer (Branding at Bottom)
-        footer_frame = ctk.CTkFrame(self, fg_color="transparent")
-        footer_frame.pack(side="bottom", fill="x", pady=(0, 10))
-
-        footer_label = ctk.CTkLabel(
-            footer_frame,
-            text="TOOL BY JATINDER JOSHI",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=self.YELLOW_ACCENT
-        )
-        footer_label.pack()
-
-    def on_setting_change(self, choice):
+        self.submit_btn.bind(on_press=self.check_answer)
+        self.add_widget(self.submit_btn)
+        
+        # Feedback Label
+        self.feedback_label = Label(text="", font_size='14sp', bold=True)
+        self.add_widget(self.feedback_label)
+        
+        # Footer
+        self.add_widget(Label(
+            text="TOOL BY JATINDER JOSHI", 
+            font_size='12sp', bold=True, color=(0.98, 0.8, 0.08, 1)
+        ))
+        
         self.generate_question()
 
-    def stop_timer(self):
-        if self.timer_job is not None:
-            self.after_cancel(self.timer_job)
-            self.timer_job = None
-        self.timer_running = False
-
-    def start_timer(self):
-        self.stop_timer()
+    def generate_question(self, *args):
+        if self.timer_event:
+            self.timer_event.cancel()
+            
+        self.answer_input.text = ""
+        self.feedback_label.text = ""
         self.time_left = 40
-        self.timer_running = True
-        self.update_timer()
-
-    def update_timer(self):
-        if not self.timer_running:
-            return
-
-        self.timer_label.configure(text=f"⏱️ {self.time_left}s")
-
-        if self.time_left <= 10:
-            self.timer_label.configure(text_color="#EF4444")
-        else:
-            self.timer_label.configure(text_color=self.YELLOW_ACCENT)
-
-        if self.time_left == 0:
-            self.stop_timer()
-            self.streak = 0
-            self.total_questions += 1
-            self.update_analytics()
-            self.streak_label.configure(text=f"🔥 Streak: {self.streak}")
-            self.feedback_label.configure(
-                text=f"⏰ Time Up! The answer was {self.correct_answer:,}",
-                text_color="#EF4444"
-            )
-            self.after(1500, self.generate_question)
-        else:
-            self.time_left -= 1
-            self.timer_job = self.after(1000, self.update_timer)
-
-    def generate_question(self):
-        self.stop_timer()
-        self.answer_entry.delete(0, 'end')
-        self.feedback_label.configure(text="")
-
-        low, high = self.difficulty_ranges[self.diff_var.get()]
-        selected_op = self.op_var.get()
-
-        if "Addition" in selected_op:
-            self.num1 = random.randint(low, high)
-            self.num2 = random.randint(low, high)
+        
+        low, high = self.difficulty_ranges[self.diff_spinner.text]
+        op = self.op_spinner.text
+        
+        if "Addition" in op:
+            self.num1, self.num2 = random.randint(low, high), random.randint(low, high)
             self.operation = "+"
             self.correct_answer = self.num1 + self.num2
-        elif "Subtraction" in selected_op:
-            a = random.randint(low, high)
-            b = random.randint(low, high)
-            self.num1 = max(a, b)
-            self.num2 = min(a, b)
+        elif "Subtraction" in op:
+            a, b = random.randint(low, high), random.randint(low, high)
+            self.num1, self.num2 = max(a, b), min(a, b)
             self.operation = "-"
             self.correct_answer = self.num1 - self.num2
-        elif "Multiplication" in selected_op:
-            mult_high = max(10, high // 10) if high > 10 else high
-            self.num1 = random.randint(low, mult_high)
-            self.num2 = random.randint(1, 12 if high <= 100 else 100)
-            self.operation = "×"
+        elif "Multiplication" in op:
+            self.num1 = random.randint(low, max(10, high // 10))
+            self.num2 = random.randint(1, 12)
+            self.operation = "*"
             self.correct_answer = self.num1 * self.num2
-        elif "Division" in selected_op:
-            divisor_high = 12 if high <= 100 else 100
-            self.num2 = random.randint(2, divisor_high)
+        elif "Division" in op:
+            self.num2 = random.randint(2, 12)
             multiplier = random.randint(low, high)
             self.num1 = self.num2 * multiplier
-            self.operation = "÷"
+            self.operation = "/"
             self.correct_answer = self.num1 // self.num2
 
-        self.question_label.configure(text=f"{self.num1:,} {self.operation} {self.num2:,}")
-        self.start_timer()
+        self.question_label.text = f"{self.num1:,} {self.operation} {self.num2:,}"
+        self.timer_event = Clock.schedule_interval(self.update_timer, 1)
 
-    def update_analytics(self):
-        if self.total_questions > 0:
-            accuracy = int((self.correct_questions / self.total_questions) * 100)
-            self.accuracy_label.configure(text=f"Accuracy: {accuracy}%")
-            self.accuracy_bar.set(accuracy / 100.0)
+    def update_timer(self, dt):
+        self.time_left -= 1
+        self.stats_label.text = f"Score: {self.score}  |  Time: {self.time_left}s  |  Streak: {self.streak}"
+        
+        if self.time_left <= 0:
+            self.timer_event.cancel()
+            self.streak = 0
+            self.feedback_label.text = f"Time Up! Answer was {self.correct_answer}"
+            self.feedback_label.color = (1, 0.2, 0.2, 1)
+            Clock.schedule_once(self.generate_question, 1.5)
 
-        if self.streak > self.best_streak:
-            self.best_streak = self.streak
-            self.best_streak_label.configure(text=f"Best Streak: {self.best_streak}")
-
-    def check_answer(self):
-        if not self.timer_running:
+    def check_answer(self, instance):
+        if not self.answer_input.text:
             return
-
-        user_input = self.answer_entry.get().strip().replace(",", "")
-
-        if not user_input:
-            return
-
+            
+        if self.timer_event:
+            self.timer_event.cancel()
+            
         try:
-            user_ans = float(user_input) if "." in user_input else int(user_input)
-            self.stop_timer()
-            self.total_questions += 1
-
+            user_ans = int(self.answer_input.text)
             if user_ans == self.correct_answer:
                 self.score += 10
                 self.streak += 1
-                self.correct_questions += 1
-                self.feedback_label.configure(text="✨ Correct! Excellent job!", text_color="#4ADE80")
+                self.feedback_label.text = "Correct! Great job!"
+                self.feedback_label.color = (0.2, 0.8, 0.2, 1)
             else:
                 self.streak = 0
-                self.feedback_label.configure(
-                    text=f"❌ Wrong! Correct answer: {self.correct_answer:,}",
-                    text_color="#F87171"
-                )
-
-            self.update_analytics()
-            self.score_label.configure(text=f"Score: {self.score}")
-            self.streak_label.configure(text=f"🔥 Streak: {self.streak}")
-            self.after(1200, self.generate_question)
-
+                self.feedback_label.text = f"Wrong! Correct answer: {self.correct_answer}"
+                self.feedback_label.color = (1, 0.2, 0.2, 1)
+                
+            self.stats_label.text = f"Score: {self.score}  |  Time: {self.time_left}s  |  Streak: {self.streak}"
+            Clock.schedule_once(self.generate_question, 1.2)
         except ValueError:
-            self.feedback_label.configure(text="⚠️ Enter a valid number!", text_color=self.YELLOW_ACCENT)
+            pass
 
-if __name__ == "__main__":
-    app = MathApp()
-    app.mainloop()
+class MathAppMain(App):
+    def build(self):
+        return MathApp()
+
+if __name__ == '__main__':
+    MathAppMain().run()
