@@ -1,8 +1,8 @@
-name: Build Android APK with Buildozer
+name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -10,56 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            git \
-            ffmpeg \
-            libgmpxx4ldbl \
-            sqlite3 \
-            libsqlite3-dev \
-            zlib1g-dev \
-            openssl \
-            libssl-dev \
-            python3-pip \
-            python3-setuptools \
-            libgdbm-dev \
-            libc6-dev \
-            libbz2-dev \
-            libffi-dev \
-            liblzma-dev \
-            tk-dev \
-            libtinfo6 \
-            libffi8 \
-            zip \
-            unzip \
-            openjdk-17-jdk
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
+        sudo apt install -y git zip unzip openjdk-17-jdk ffmpeg
+        sudo apt install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+        pip install --upgrade pip
+        pip install buildozer cython
 
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython setuptools
+    - name: Accept Android SDK Licenses
+      run: |
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
 
-      - name: Build APK with Buildozer
-        run: |
-          # Create repository config to avoid prompt
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          
-          # Run buildozer directly with auto-accept license flag
-          ACCEPT_BUILD_LICENSES=y buildozer -v android debug
+    - name: Build APK with Buildozer
+      run: |
+        buildozer -v android debug
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-apk
-          path: bin/*.apk
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: bin/*.apk
