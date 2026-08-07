@@ -9,6 +9,9 @@ package.name = mathapp
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.jatinder
 
+# (str) Application version
+version = 0.1
+
 # (str) Source code where the main.py lives
 source.dir = .
 
@@ -16,7 +19,6 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 
 # (list) Application requirements
-# comma separated e.g. requirements = sqlite3,kivy
 requirements = python3,kivy
 
 # (str) Presumed orientation ("all", "portrait", "landscape", "square")
@@ -34,7 +36,7 @@ android.api = 33
 # (int) Minimum API required
 android.minapi = 21
 
-# (str) Android NDK version to use (Using 25b prevents NDK r28c build failures)
+# (str) Android NDK version to use
 android.ndk = 25b
 
 # (str) Android Build Tools version
@@ -43,7 +45,7 @@ android.build_tools_version = 34.0.0
 # (bool) Automatically accept Android SDK license
 android.accept_sdk_license = True
 
-# (str) The Android arch to build for (Using single architecture arm64-v8a prevents multi-arch build crash)
+# (str) The Android arch to build for
 android.archs = arm64-v8a
 
 # (bool) Copy library instead of making a symlink
