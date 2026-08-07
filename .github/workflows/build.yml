@@ -27,18 +27,23 @@ jobs:
         pip install --upgrade pip setuptools
         pip install "buildozer==1.5.0" cython
 
-    - name: Clean Conflicting NDK Envs and Pre-accept SDK Licenses
+    - name: Accept Android SDK Licenses
       run: |
         mkdir -p $HOME/.android
         touch $HOME/.android/repositories.cfg
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
+    - name: Setup Android NDK 25b
+      run: |
+        # Download NDK 25b manually to guarantee a working path
+        wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
+        unzip -q ndk.zip -d $HOME
+        rm ndk.zip
+
     - name: Build APK with Buildozer
       env:
-        # Pre-installed NDK v27 variables ko clear karke Buildozer ke NDK 25b ko prioritize karna
-        ANDROID_NDK_HOME: ''
-        ANDROID_NDK_ROOT: ''
-        ANDROID_NDK: ''
+        ANDROID_NDK_HOME: /home/runner/android-ndk-r25b
+        ANDROID_NDK_ROOT: /home/runner/android-ndk-r25b
       run: |
         buildozer -v android debug
 
