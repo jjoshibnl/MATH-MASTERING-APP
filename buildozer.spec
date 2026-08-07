@@ -39,6 +39,8 @@ fullscreen = 0
 # (int) Minimum API required
 android.minapi = 21
 
+android.accept_sdk_license = True
+
 android.ndk_api=21
 [buildozer]
 
