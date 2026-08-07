@@ -34,11 +34,12 @@ fullscreen = 0
 # android.permissions = INTERNET
 
 # (int) Target Android API, should be as high as possible.
-# android.api = 31
+ android.api = 33
 
 # (int) Minimum API required
-# android.minapi = 21
+android.minapi = 21
 
+android.ndk_api=21
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
