@@ -18,20 +18,21 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install Dependencies
+    - name: Install System Dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
         sudo apt install -y git zip unzip openjdk-17-jdk ffmpeg
         sudo apt install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
-        pip install --upgrade pip
+        pip install --upgrade pip setuptools
         pip install buildozer cython
 
-    - name: Accept Android SDK Licenses
+    - name: Pre-accept Android SDK Licenses
       run: |
+        mkdir -p $HOME/.android
+        touch $HOME/.android/repositories.cfg
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;34.0.0" "platforms;android-34" "platform-tools" || true
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
 
     - name: Build APK with Buildozer
       run: |
