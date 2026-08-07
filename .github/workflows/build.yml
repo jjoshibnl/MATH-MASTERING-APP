@@ -13,43 +13,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Build APK with Buildozer Action
+      uses: ArtemShedov/buildozer-action@v1.2.0
       with:
-        python-version: '3.11'
-
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Set up Android SDK & NDK
-      uses: android-actions/setup-android@v3
-      with:
-        cmdline-tools-version: 'latest'
-
-    - name: Install NDK 25b
-      run: |
-        sdkmanager --install "ndk;25.2.9519653" "build-tools;34.0.0" "platforms;android-33"
-        yes | sdkmanager --licenses || true
-
-    - name: Install Dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
-        sudo apt install -y git zip unzip ffmpeg
-        sudo apt install -y libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
-        pip install --upgrade pip setuptools
-        pip install "buildozer==1.5.0" cython
-
-    - name: Build APK with Buildozer
-      env:
-        ANDROID_NDK_HOME: ${{ runner.tool_cache }}/android-sdk/ndk/25.2.9519653
-        ANDROID_NDK_ROOT: ${{ runner.tool_cache }}/android-sdk/ndk/25.2.9519653
-        ANDROID_NDK: ${{ runner.tool_cache }}/android-sdk/ndk/25.2.9519653
-      run: |
-        buildozer -v android debug
+        workdir: .
+        buildozer_version: master
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
