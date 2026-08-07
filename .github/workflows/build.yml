@@ -51,7 +51,7 @@ jobs:
 
       - name: Build APK with Buildozer
         run: |
-          yes | buildozer -v android debug
+          ACCEPT_BUILD_LICENSES=y buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
