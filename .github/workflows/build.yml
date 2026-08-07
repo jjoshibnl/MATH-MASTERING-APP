@@ -27,17 +27,21 @@ jobs:
         pip install --upgrade pip setuptools
         pip install buildozer cython
 
-    - name: Auto Accept Buildozer SDK Licenses
+    - name: Setup Android SDK Environment
       run: |
-        # Buildozer directory create karke licenses bypass file prepare karna
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        mkdir -p ~/.buildozer/android/platform
+        # Create legacy symlink so buildozer finds sdkmanager where it expects it
+        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+        ln -sf $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || true
+        
+        # Pre-accept licenses
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        cp -r $ANDROID_HOME/licenses/* ~/.buildozer/android/platform/android-sdk/licenses/ 2>/dev/null || true
 
     - name: Build APK with Buildozer
       run: |
-        # Non-interactive mode me y response automatically send karne ke liye
-        yes | buildozer -v android debug
+        buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
